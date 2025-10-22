@@ -2,36 +2,35 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PostureMate - Approvazione Dottore</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f0f2f5;
-      margin: 0;
-      padding: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f3f4f6;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       height: 100vh;
     }
     .container {
       background: white;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       text-align: center;
       max-width: 500px;
     }
     h2 { color: #007bff; margin-bottom: 20px; }
-    .success { color: #28a745; font-size: 18px; }
-    .error { color: #dc3545; font-size: 18px; }
-    .loading { color: #007bff; font-size: 18px; }
+    .success { color: #28a745; font-weight: bold; }
+    .error { color: #dc3545; font-weight: bold; }
+    .loading { color: #007bff; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>PostureMate - Approvazione Dottore</h2>
-    <div id="message" class="loading">⏳ Elaborazione in corso...</div>
+    <div id="message" class="loading">Elaborazione in corso...</div>
   </div>
 
   <!-- Firebase SDK -->
@@ -39,55 +38,79 @@
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 
   <script>
-    // ⚙️ CONFIGURA QUI I TUOI DATI FIREBASE
+    // ⚙️ CONFIGURAZIONE FIREBASE (la tua vera configurazione)
     const firebaseConfig = {
-      apiKey: "TUO_API_KEY",
-      authDomain: "TUO_PROGETTO.firebaseapp.com",
-      databaseURL: "https://TUO_PROGETTO-default-rtdb.firebaseio.com",
-      projectId: "TUO_PROGETTO",
-      storageBucket: "TUO_PROGETTO.appspot.com",
-      messagingSenderId: "TUO_SENDER_ID",
-      appId: "TUO_APP_ID"
+      apiKey: "AIzaSyAsZ_o9JfM-xQMEaLUv8AaRVMeM8gW7Iwk",
+      authDomain: "posturefit-6d383.firebaseapp.com",
+      databaseURL: "https://posturefit-6d383-default-rtdb.firebaseio.com",
+      projectId: "posturefit-6d383",
+      storageBucket: "posturefit-6d383.firebasestorage.app",
+      messagingSenderId: "282660135065",
+      appId: "1:282660135065:web:2f3eaf964d906cee465808",
+      measurementId: "G-BSTJ65EK5W"
     };
+
     firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
+    // Funzione principale
     async function approveDoctor(action, key) {
-      const message = document.getElementById('message');
+      const messageEl = document.getElementById("message");
+
+      if (!key) {
+        messageEl.innerHTML = "<div class='error'>❌ Link non valido.</div>";
+        return;
+      }
+
       try {
-        if (!key) {
-          message.innerHTML = '<div class="error">❌ Link non valido.</div>';
-          return;
-        }
+        messageEl.innerHTML = "<div class='loading'>🔍 Verifica chiave in corso...</div>";
 
-        const ref = firebase.database().ref('users/dottore');
-        const snap = await ref.orderByChild('approval_key').equalTo(key).once('value');
+        const doctorsRef = db.ref("users/dottore");
+        const snapshot = await doctorsRef.orderByChild("approval_key").equalTo(key).once("value");
 
-        if (!snap.exists()) {
-          message.innerHTML = '<div class="error">❌ Chiave non trovata o scaduta.</div>';
-          return;
-        }
+        if (snapshot.exists()) {
+          const doctors = snapshot.val();
+          const doctorId = Object.keys(doctors)[0];
 
-        const doctorId = Object.keys(snap.val())[0];
+          if (action === "approve") {
+            messageEl.innerHTML = "<div class='loading'>⏳ Approvazione in corso...</div>";
+            await doctorsRef.child(doctorId).child("isApproved").set(true);
+            await doctorsRef.child(doctorId).child("approvalStatus").set("approved");
 
-        if (action === 'approve') {
-          await ref.child(doctorId).child('isApproved').set(true);
-          message.innerHTML = '<div class="success">✅ Dottore approvato con successo!</div>';
-        } else if (action === 'reject') {
-          await ref.child(doctorId).remove();
-          message.innerHTML = '<div class="error">❌ Registrazione rifiutata.</div>';
+            messageEl.innerHTML = `
+              <div class="success">✅ Dottore approvato con successo!</div>
+              <p>Il dottore può ora accedere all'app PostureMate.</p>
+            `;
+          } else if (action === "reject") {
+            messageEl.innerHTML = "<div class='loading'>⏳ Rifiuto in corso...</div>";
+            await doctorsRef.child(doctorId).child("approvalStatus").set("rejected");
+
+            messageEl.innerHTML = `
+              <div class="error">❌ Richiesta di approvazione rifiutata.</div>
+              <p>Il dottore è stato contrassegnato come rifiutato.</p>
+            `;
+          } else {
+            messageEl.innerHTML = "<div class='error'>❌ Parametro azione non valido.</div>";
+          }
         } else {
-          message.innerHTML = '<div class="error">❌ Azione non valida.</div>';
+          messageEl.innerHTML = `
+            <div class="error">❌ Link non valido o già usato.</div>
+            <p>Controlla che il link sia corretto o non già elaborato.</p>
+          `;
         }
-      } catch (e) {
-        console.error(e);
-        message.innerHTML = '<div class="error">❌ Errore durante l\'operazione.</div>';
+      } catch (error) {
+        console.error("Errore Firebase:", error);
+        messageEl.innerHTML = `
+          <div class="error">⚠️ Errore durante l'elaborazione: ${error.message}</div>
+        `;
       }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    // Esegui al caricamento
+    document.addEventListener("DOMContentLoaded", () => {
       const params = new URLSearchParams(window.location.search);
-      const action = params.get('action');
-      const key = params.get('key');
+      const action = params.get("action");
+      const key = params.get("key");
       approveDoctor(action, key);
     });
   </script>
