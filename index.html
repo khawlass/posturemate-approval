@@ -3,9 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <title>PostureMate - Approvazione Dottore</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 40px; }
+    .container { background: white; padding: 30px; border-radius: 10px; max-width: 600px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h2 { text-align: center; color: #007bff; }
+    .success { color: #28a745; font-size: 18px; text-align:center; }
+    .error { color: #dc3545; font-size: 18px; text-align:center; }
+    .loading { color: #007bff; font-size: 18px; text-align:center; }
+  </style>
 </head>
-<body style="font-family:Arial; text-align:center; margin-top:50px;">
-  <h1>✅ Pagina GitHub Pages Funziona!</h1>
-  <p>Ora puoi aggiungere qui il codice Firebase per approvare i dottori.</p>
+<body>
+  <div class="container">
+    <h2>PostureMate - Approvazione Dottore</h2>
+    <div id="message" class="loading">⏳ Elaborazione in corso...</div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+
+  <script>
+    // ⚙️ CONFIGURA QUI I TUOI DATI FIREBASE (copiali da Impostazioni progetto -> SDK Web)
+    const firebaseConfig = {
+      apiKey: "TUO_API_KEY",
+      authDomain: "TUO_PROGETTO.firebaseapp.com",
+      databaseURL: "https://TUO_PROGETTO-default-rtdb.firebaseio.com",
+      projectId: "TUO_PROGETTO",
+      storageBucket: "TUO_PROGETTO.appspot.com",
+      messagingSenderId: "TUO_SENDER_ID",
+      appId: "TUO_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    async function approveDoctor(action, key) {
+      const message = document.getElementById('message');
+      try {
+        if (!key) {
+          message.innerHTML = '<div class="error">❌ Link non valido.</div>';
+          return;
+        }
+
+        const ref = firebase.database().ref('users/dottore');
+        const snap = await ref.orderByChild('approval_key').equalTo(key).once('value');
+
+        if (!snap.exists()) {
+          message.innerHTML = '<div class="error">❌ Chiave non trovata o scaduta.</div>';
+          return;
+        }
+
+        const doctorId = Object.keys(snap.val())[0];
+
+        if (action === 'approve') {
+          await ref.child(doctorId).child('isApproved').set(true);
+          message.innerHTML = '<div class="success">✅ Dottore approvato con successo!</div>';
+        } else if (action === 'reject') {
+          await ref.child(doctorId).remove();
+          message.innerHTML = '<div class="error">❌ Registrazione rifiutata.</div>';
+        } else {
+          message.innerHTML = '<div class="error">❌ Azione non valida.</div>';
+        }
+      } catch (e) {
+        console.error(e);
+        message.innerHTML = '<div class="error">❌ Errore durante l\'operazione.</div>';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get('action');
+      const key = params.get('key');
+      approveDoctor(action, key);
+    });
+  </script>
 </body>
 </html>
