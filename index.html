@@ -29,7 +29,7 @@
 </head>
 <body>
   <div class="container">
-    <h2>PostureMate - Approvazione Dottore</h2>
+    <h2>PostureMate – Approvazione Dottore</h2>
     <div id="message" class="loading">Elaborazione in corso...</div>
   </div>
 
@@ -38,7 +38,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 
   <script>
-    // ⚙️ CONFIGURAZIONE FIREBASE (la tua vera configurazione)
     const firebaseConfig = {
       apiKey: "AIzaSyAsZ_o9JfM-xQMEaLUv8AaRVMeM8gW7Iwk",
       authDomain: "posturefit-6d383.firebaseapp.com",
@@ -53,7 +52,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Funzione principale
     async function approveDoctor(action, key) {
       const messageEl = document.getElementById("message");
 
@@ -63,54 +61,53 @@
       }
 
       try {
-        messageEl.innerHTML = "<div class='loading'>🔍 Verifica chiave in corso...</div>";
+        messageEl.innerHTML = "<div class='loading'>🔍 Verifica in corso...</div>";
 
-        const doctorsRef = db.ref("users/dottore");
-        const snapshot = await doctorsRef.orderByChild("approval_key").equalTo(key).once("value");
+        const approvalRef = db.ref("v2/pendingApprovals/" + key);
+        const snapshot = await approvalRef.once("value");
 
-        if (snapshot.exists()) {
-          const doctors = snapshot.val();
-          const doctorId = Object.keys(doctors)[0];
-
-          if (action === "approve") {
-            messageEl.innerHTML = "<div class='loading'>⏳ Approvazione in corso...</div>";
-            await doctorsRef.child(doctorId).child("isApproved").set(true);
-            await doctorsRef.child(doctorId).child("approvalStatus").set("approved");
-
-            messageEl.innerHTML = `
-              <div class="success">✅ Dottore approvato con successo!</div>
-              <p>Il dottore può ora accedere all'app PostureMate.</p>
-            `;
-          } else if (action === "reject") {
-            messageEl.innerHTML = "<div class='loading'>⏳ Rifiuto in corso...</div>";
-            await doctorsRef.child(doctorId).child("approvalStatus").set("rejected");
-
-            messageEl.innerHTML = `
-              <div class="error">❌ Richiesta di approvazione rifiutata.</div>
-              <p>Il dottore è stato contrassegnato come rifiutato.</p>
-            `;
-          } else {
-            messageEl.innerHTML = "<div class='error'>❌ Parametro azione non valido.</div>";
-          }
-        } else {
-          messageEl.innerHTML = `
-            <div class="error">❌ Link non valido o già usato.</div>
-            <p>Controlla che il link sia corretto o non già elaborato.</p>
-          `;
+        if (!snapshot.exists()) {
+          messageEl.innerHTML = "<div class='error'>❌ Link non valido o già usato.</div>";
+          return;
         }
+
+        const data = snapshot.val();
+
+        if (data.status !== "pending") {
+          messageEl.innerHTML = `
+            <div class='error'>⚠️ Richiesta già elaborata (stato: ${data.status}).</div>
+          `;
+          return;
+        }
+
+        if (action === "approve") {
+          messageEl.innerHTML = "<div class='loading'>⏳ Approvazione in corso...</div>";
+          await approvalRef.update({ status: "approved" });
+          messageEl.innerHTML = `
+            <div class="success">✅ Dottore approvato!</div>
+            <p>${data.firstName} ${data.lastName} può ora accedere a PostureMate.</p>
+          `;
+        } else if (action === "reject") {
+          messageEl.innerHTML = "<div class='loading'>⏳ Rifiuto in corso...</div>";
+          await approvalRef.update({ status: "rejected" });
+          messageEl.innerHTML = `
+            <div class="error">❌ Richiesta rifiutata.</div>
+            <p>${data.firstName} ${data.lastName} non potrà accedere all'app.</p>
+          `;
+        } else {
+          messageEl.innerHTML = "<div class='error'>❌ Parametro azione non valido.</div>";
+        }
+
       } catch (error) {
         console.error("Errore Firebase:", error);
-        messageEl.innerHTML = `
-          <div class="error">⚠️ Errore durante l'elaborazione: ${error.message}</div>
-        `;
+        messageEl.innerHTML = `<div class="error">⚠️ Errore: ${error.message}</div>`;
       }
     }
 
-    // Esegui al caricamento
     document.addEventListener("DOMContentLoaded", () => {
       const params = new URLSearchParams(window.location.search);
       const action = params.get("action");
-      const key = params.get("key");
+      const key    = params.get("key");
       approveDoctor(action, key);
     });
   </script>
