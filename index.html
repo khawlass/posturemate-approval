@@ -33,7 +33,6 @@
     <div id="message" class="loading">Elaborazione in corso...</div>
   </div>
 
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 
@@ -63,8 +62,8 @@
       try {
         messageEl.innerHTML = "<div class='loading'>🔍 Verifica in corso...</div>";
 
-        const approvalRef = db.ref("v2/pendingApprovals/" + key);
-        const snapshot = await approvalRef.once("value");
+        // Legge pendingApprovals per trovare il doctorUid
+        const snapshot = await db.ref("v2/pendingApprovals/" + key).once("value");
 
         if (!snapshot.exists()) {
           messageEl.innerHTML = "<div class='error'>❌ Link non valido o già usato.</div>";
@@ -72,24 +71,17 @@
         }
 
         const data = snapshot.val();
-
-        if (data.status !== "pending") {
-          messageEl.innerHTML = `
-            <div class='error'>⚠️ Richiesta già elaborata (stato: ${data.status}).</div>
-          `;
-          return;
-        }
+        const doctorUid = data.doctorUid;
 
         if (action === "approve") {
           messageEl.innerHTML = "<div class='loading'>⏳ Approvazione in corso...</div>";
-          await approvalRef.update({ status: "approved" });
+          // Scrive SOLO approved = true nel profilo dottore
+          await db.ref("v2/users/doctors/" + doctorUid + "/approved").set(true);
           messageEl.innerHTML = `
             <div class="success">✅ Dottore approvato!</div>
             <p>${data.firstName} ${data.lastName} può ora accedere a PostureMate.</p>
           `;
         } else if (action === "reject") {
-          messageEl.innerHTML = "<div class='loading'>⏳ Rifiuto in corso...</div>";
-          await approvalRef.update({ status: "rejected" });
           messageEl.innerHTML = `
             <div class="error">❌ Richiesta rifiutata.</div>
             <p>${data.firstName} ${data.lastName} non potrà accedere all'app.</p>
@@ -106,9 +98,7 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       const params = new URLSearchParams(window.location.search);
-      const action = params.get("action");
-      const key    = params.get("key");
-      approveDoctor(action, key);
+      approveDoctor(params.get("action"), params.get("key"));
     });
   </script>
 </body>
