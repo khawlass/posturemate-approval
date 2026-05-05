@@ -3,59 +3,55 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PostureMate - Approvazione Dottore</title>
+  <title>PostureMate</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html, body {
+      height: 100%;
+    }
+
     body {
-      background-color: #f4f4f4;
+      background-color: #ffffff;
       font-family: Arial, Helvetica, sans-serif;
       min-height: 100vh;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
+      flex-direction: column;
     }
 
-    .card {
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-      max-width: 480px;
-      width: 100%;
-      overflow: hidden;
-    }
-
-    .card-header {
+    .page-header {
       background-color: #7CB342;
-      padding: 24px 28px;
+      padding: 28px 24px;
     }
-    .card-header h1 {
-      font-size: 20px;
+    .page-header h1 {
+      font-size: 24px;
       font-weight: bold;
       color: #ffffff;
       letter-spacing: 0.4px;
     }
 
-    .card-body {
-      padding: 24px 28px;
+    .page-body {
+      flex: 1;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
     }
 
     .section-title {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
     .section-title .accent-bar {
       width: 4px;
-      height: 24px;
+      min-height: 26px;
       background-color: #7CB342;
       border-radius: 2px;
       flex-shrink: 0;
     }
     .section-title span {
-      font-size: 17px;
+      font-size: 18px;
       font-weight: bold;
       color: #212121;
     }
@@ -64,90 +60,73 @@
       background-color: #f1f8e9;
       border-left: 4px solid #7CB342;
       border-radius: 4px;
-      padding: 14px 16px;
+      padding: 16px;
       margin-bottom: 20px;
-      font-size: 13px;
-      color: #7CB342;
-      line-height: 1.5;
+      font-size: 14px;
+      color: #558b2f;
+      line-height: 1.6;
+    }
+
+    .status-message {
+      font-size: 15px;
+      color: #424242;
+      line-height: 1.6;
+      margin-bottom: 12px;
     }
 
     .spinner {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border: 3px solid #e0e0e0;
       border-top-color: #7CB342;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
-      margin: 8px auto 16px;
+      margin: 12px 0 20px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    .status-message {
-      font-size: 14px;
-      color: #424242;
-      text-align: center;
-      line-height: 1.6;
-    }
 
     .divider {
       border: none;
       border-top: 1px solid #e0e0e0;
-      margin: 20px 0 16px;
+      margin: 24px 0 20px;
     }
 
     .actions {
       display: flex;
-      justify-content: flex-end;
-      gap: 10px;
+      gap: 12px;
     }
-
     .btn-outline {
-      padding: 10px 22px;
+      padding: 12px 24px;
       background-color: #ffffff;
       color: #7CB342;
       border: 2px solid #7CB342;
       border-radius: 6px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: bold;
       cursor: pointer;
       text-decoration: none;
       display: inline-block;
     }
 
-    .btn-solid {
-      padding: 10px 22px;
-      background-color: #7CB342;
-      color: #ffffff;
-      border: none;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: bold;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .card-footer {
+    .page-footer {
       background-color: #f4f4f4;
       border-top: 1px solid #e0e0e0;
-      padding: 14px 28px;
+      padding: 16px 24px;
     }
-    .card-footer p {
-      font-size: 11px;
+    .page-footer p {
+      font-size: 12px;
       color: #9e9e9e;
-      line-height: 1.5;
+      line-height: 1.6;
     }
   </style>
 </head>
 <body>
 
-<div class="card">
-
-  <div class="card-header">
+  <div class="page-header">
     <h1>PostureMate</h1>
   </div>
 
-  <div class="card-body">
+  <div class="page-body">
 
     <div class="section-title">
       <div class="accent-bar"></div>
@@ -167,14 +146,11 @@
 
   </div>
 
-  <div class="card-footer">
+  <div class="page-footer">
     <p>PostureMate &middot; Sistema di monitoraggio medico</p>
     <p>Azione eseguita dall'amministratore del sistema.</p>
   </div>
 
-</div>
-
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -185,8 +161,7 @@
     databaseURL:       "https://posturemate-6b424-default-rtdb.europe-west1.firebasedatabase.app",
     projectId:         "posturemate-6b424",
     storageBucket:     "posturemate-6b424.appspot.com",
-    messagingSenderId: "946978309107",
-    appId:             "1:946978309107:android:ef37b5ccf0f12c1d1c95be"
+    messagingSenderId: "946978309107"
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -197,7 +172,7 @@
     document.getElementById('spinner').style.display      = 'none';
     document.getElementById('status-message').textContent = message;
     if (infoText) {
-      const box = document.getElementById('info-box');
+      var box = document.getElementById('info-box');
       box.textContent   = infoText;
       box.style.display = 'block';
     }
@@ -205,9 +180,9 @@
     document.getElementById('actions').style.display = 'flex';
   }
 
-  const params = new URLSearchParams(window.location.search);
-  const action = params.get('action');
-  const uid    = params.get('uid');
+  var params = new URLSearchParams(window.location.search);
+  var action = params.get('action');
+  var uid    = params.get('uid');
 
   if (!uid || !action) {
     setStatus(
@@ -216,22 +191,34 @@
       'Il link utilizzato non contiene le informazioni necessarie. Contattare il supporto.'
     );
   } else if (action === 'approve') {
+
+    var timer = setTimeout(function() {
+      setStatus(
+        'Timeout di connessione',
+        null,
+        'Il server non ha risposto. Verificare la connessione e riprovare.'
+      );
+    }, 10000);
+
     db.ref('v2/users/doctors/' + uid + '/approved')
       .set(true)
-      .then(() => {
+      .then(function() {
+        clearTimeout(timer);
         setStatus(
           'Accesso approvato',
           "Il dottore ha ora accesso completo all'applicazione PostureMate.",
-          "L'approvazione e' stata registrata correttamente. Il medico potra' accedere immediatamente."
+          "L'approvazione e' stata registrata. Il medico puo' accedere immediatamente."
         );
       })
-      .catch(err => {
+      .catch(function(err) {
+        clearTimeout(timer);
         setStatus(
-          "Errore durante l'approvazione",
+          'Errore',
           null,
-          'Impossibile completare l\'operazione: ' + err.message
+          'Operazione fallita: ' + err.message
         );
       });
+
   } else if (action === 'reject') {
     setStatus(
       'Accesso rifiutato',
@@ -242,7 +229,7 @@
     setStatus(
       'Azione non riconosciuta',
       null,
-      'Il parametro "action" nel link non e\' valido. Contattare il supporto.'
+      'Il parametro nel link non e\' valido. Contattare il supporto.'
     );
   }
 </script>
