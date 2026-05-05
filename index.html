@@ -151,22 +151,7 @@
     <p>Azione eseguita dall'amministratore del sistema.</p>
   </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <script>
-  const firebaseConfig = {
-    apiKey:            "AIzaSyDr5JZBF3i2tDV0QflxOJFGXEYXgNJkGsQ",
-    authDomain:        "posturemate-6b424.firebaseapp.com",
-    databaseURL:       "https://posturemate-6b424-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId:         "posturemate-6b424",
-    storageBucket:     "posturemate-6b424.appspot.com",
-    messagingSenderId: "946978309107"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
   function setStatus(title, infoText, message) {
     document.getElementById('card-title').textContent     = title;
     document.getElementById('spinner').style.display      = 'none';
@@ -184,40 +169,43 @@
   var action = params.get('action');
   var uid    = params.get('uid');
 
+  var DB_URL = 'https://posturemate-6b424-default-rtdb.europe-west1.firebasedatabase.app';
+
   if (!uid || !action) {
     setStatus(
       'Link non valido',
       'Parametri mancanti nel link ricevuto via email.',
-      'Il link utilizzato non contiene le informazioni necessarie. Contattare il supporto.'
+      'Il link non contiene le informazioni necessarie. Contattare il supporto.'
     );
   } else if (action === 'approve') {
 
     var timer = setTimeout(function() {
-      setStatus(
-        'Timeout di connessione',
-        null,
-        'Il server non ha risposto. Verificare la connessione e riprovare.'
-      );
+      setStatus('Timeout', null, 'Il server non ha risposto. Verificare la connessione e riprovare.');
     }, 10000);
 
-    db.ref('v2/users/doctors/' + uid + '/approved')
-      .set(true)
-      .then(function() {
-        clearTimeout(timer);
+    fetch(DB_URL + '/v2/users/doctors/' + encodeURIComponent(uid) + '/approved.json', {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    'true'
+    })
+    .then(function(response) {
+      clearTimeout(timer);
+      if (response.ok) {
         setStatus(
           'Accesso approvato',
           "Il dottore ha ora accesso completo all'applicazione PostureMate.",
           "L'approvazione e' stata registrata. Il medico puo' accedere immediatamente."
         );
-      })
-      .catch(function(err) {
-        clearTimeout(timer);
-        setStatus(
-          'Errore',
-          null,
-          'Operazione fallita: ' + err.message
-        );
-      });
+      } else {
+        return response.text().then(function(text) {
+          setStatus('Errore', null, 'Risposta server: ' + text);
+        });
+      }
+    })
+    .catch(function(err) {
+      clearTimeout(timer);
+      setStatus('Errore di connessione', null, 'Connessione fallita: ' + err.message);
+    });
 
   } else if (action === 'reject') {
     setStatus(
