@@ -1,331 +1,251 @@
-```java
-package com.example.myapplication3.util;
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PostureMate - Approvazione Dottore</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-import android.util.Log;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Properties;
-import java.util.Random;
-
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-
-/**
- * Utility statica per l'invio di email transazionali via SMTP Gmail.
- * Ogni metodo esegue l'invio su un thread in background — non blocca la UI.
- */
-public final class EmailService {
-
-    private static final String TAG         = "EmailService";
-    private static final String SMTP_SERVER = "smtp.gmail.com";
-    private static final int    SMTP_PORT   = 587;
-    private static final String SMTP_USER   = "jihadkhawla059@gmail.com";
-    private static final String SMTP_PASSWORD = "wmoikklyvrmubomz";
-
-    private static final String ADMIN_EMAIL       = "j.khawla@outlook.com";
-    private static final String APPROVAL_BASE_URL = "https://khawlass.github.io/posturemate-approval/";
-
-    private EmailService() {}
-
-    // ─── API pubblica ────────────────────────────────────────────────────────
-
-    /** Genera una password temporanea numerica di 10 cifre. */
-    public static String generateTempPassword() {
-        StringBuilder sb = new StringBuilder();
-        Random random = new Random();
-        for (int i = 0; i < 10; i++) sb.append(random.nextInt(10));
-        return sb.toString();
+    body {
+      background-color: #f4f4f4;
+      font-family: Arial, Helvetica, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
     }
 
-    /** Invia le credenziali di accesso al paziente appena creato. */
-    public static void sendPatientCredentials(String patientName, String email, String password) {
-        new Thread(() -> {
-            try {
-                Session session = buildSession();
-                MimeMessage message = new MimeMessage(session);
-                message.setFrom(new InternetAddress(SMTP_USER, "PostureMate"));
-                message.setRecipient(Message.RecipientType.TO, new InternetAddress(email));
-                message.setSubject("PostureMate - Le tue credenziali di accesso");
-
-                // Multipart: plain + html
-                MimeBodyPart textPart = new MimeBodyPart();
-                textPart.setText(buildPatientCredentialsText(patientName, email, password), "UTF-8");
-
-                MimeBodyPart htmlPart = new MimeBodyPart();
-                htmlPart.setContent(buildPatientCredentialsHtml(patientName, email, password), "text/html; charset=UTF-8");
-
-                Multipart multipart = new MimeMultipart("alternative");
-                multipart.addBodyPart(textPart);
-                multipart.addBodyPart(htmlPart);
-                message.setContent(multipart);
-
-                sendMessage(session, message);
-                Log.d(TAG, "Email credenziali inviata a: " + email);
-
-            } catch (Exception e) {
-                Log.e(TAG, "Errore invio credenziali a " + email + ": " + e.getMessage(), e);
-            }
-        }).start();
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      max-width: 480px;
+      width: 100%;
+      overflow: hidden;
     }
 
-    /** Invia l'email di approvazione all'admin per una nuova richiesta dottore. */
-    public static void sendApprovalEmail(String nome, String cognome,
-                                         String emailDottore, String doctorUid) {
-        new Thread(() -> {
-            try {
-                Log.d(TAG, "[1] Thread avviato per: " + emailDottore);
-
-                String approveUrl = buildApprovalUrl("approve", doctorUid);
-                String rejectUrl  = buildApprovalUrl("reject",  doctorUid);
-                String dataOggi   = new SimpleDateFormat("dd/MM/yyyy", Locale.ITALY).format(new Date());
-                Log.d(TAG, "[2] URL costruiti OK");
-
-                Session session = buildSession();
-                Log.d(TAG, "[3] Session creata — host=" + SMTP_SERVER + " porta=" + SMTP_PORT);
-
-                MimeMessage message = new MimeMessage(session);
-                message.setFrom(new InternetAddress(SMTP_USER, "PostureMate Sistema"));
-                message.setRecipient(Message.RecipientType.TO, new InternetAddress(ADMIN_EMAIL));
-                message.setSubject("Richiesta accesso dottore: " + nome + " " + cognome);
-
-                // Multipart: plain + html (anti-spam)
-                MimeBodyPart textPart = new MimeBodyPart();
-                textPart.setText(buildApprovalText(nome, cognome, emailDottore, dataOggi, approveUrl, rejectUrl), "UTF-8");
-
-                MimeBodyPart htmlPart = new MimeBodyPart();
-                htmlPart.setContent(buildApprovalHtml(nome, cognome, emailDottore, dataOggi, approveUrl, rejectUrl), "text/html; charset=UTF-8");
-
-                Multipart multipart = new MimeMultipart("alternative");
-                multipart.addBodyPart(textPart);
-                multipart.addBodyPart(htmlPart);
-                message.setContent(multipart);
-
-                Log.d(TAG, "[4] Messaggio costruito — destinatario: " + ADMIN_EMAIL);
-
-                sendMessage(session, message);
-                Log.d(TAG, "[6] EMAIL INVIATA OK per: " + emailDottore);
-
-            } catch (Exception e) {
-                Log.e(TAG, "[ERRORE] Fase fallita: " + e.getMessage(), e);
-            }
-        }).start();
+    .card-header {
+      background-color: #7CB342;
+      padding: 24px 28px;
+    }
+    .card-header h1 {
+      font-size: 20px;
+      font-weight: bold;
+      color: #ffffff;
+      letter-spacing: 0.4px;
     }
 
-    // ─── SMTP ────────────────────────────────────────────────────────────────
-
-    private static Session buildSession() {
-        Properties props = new Properties();
-        props.put("mail.smtp.host",              SMTP_SERVER);
-        props.put("mail.smtp.port",              String.valueOf(SMTP_PORT));
-        props.put("mail.smtp.auth",              "true");
-        props.put("mail.smtp.starttls.enable",   "true");
-        props.put("mail.smtp.starttls.required", "true");
-        props.put("mail.smtp.ssl.trust",         SMTP_SERVER);
-
-        return Session.getInstance(props, new javax.mail.Authenticator() {
-            @Override
-            protected javax.mail.PasswordAuthentication getPasswordAuthentication() {
-                return new javax.mail.PasswordAuthentication(SMTP_USER, SMTP_PASSWORD);
-            }
-        });
+    .card-body {
+      padding: 24px 28px;
     }
 
-    private static void sendMessage(Session session, MimeMessage message) throws Exception {
-        Log.d(TAG, "[5] Connessione SMTP in corso...");
-        Transport transport = session.getTransport("smtp");
-        transport.connect(SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASSWORD);
-        Log.d(TAG, "[5b] Connesso e autenticato");
-        transport.sendMessage(message, message.getAllRecipients());
-        try { transport.close(); } catch (MessagingException ignored) {}
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .section-title .accent-bar {
+      width: 4px;
+      height: 24px;
+      background-color: #7CB342;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .section-title span {
+      font-size: 17px;
+      font-weight: bold;
+      color: #212121;
     }
 
-    private static String buildApprovalUrl(String action, String uid) {
-        try {
-            return APPROVAL_BASE_URL + "?action=" + action
-                    + "&uid=" + URLEncoder.encode(uid, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            return APPROVAL_BASE_URL + "?action=" + action + "&uid=" + uid;
-        }
+    .info-box {
+      background-color: #f1f8e9;
+      border-left: 4px solid #7CB342;
+      border-radius: 4px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #7CB342;
+      line-height: 1.5;
     }
 
-    // ─── Corpo email approvazione (plain) ────────────────────────────────────
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #e0e0e0;
+      border-top-color: #7CB342;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 8px auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    private static String buildApprovalText(String nome, String cognome, String email,
-                                             String data, String approveUrl, String rejectUrl) {
-        return "PostureMate - Nuova richiesta di accesso\n"
-             + "==========================================\n\n"
-             + "E' stata ricevuta una nuova richiesta di accesso al sistema PostureMate.\n\n"
-             + "Dati del richiedente:\n"
-             + "  Nome:   " + nome + " " + cognome + "\n"
-             + "  Email:  " + email + "\n"
-             + "  Data:   " + data + "\n\n"
-             + "Verificare le credenziali del medico prima di procedere.\n\n"
-             + "Per APPROVARE l'accesso:\n" + approveUrl + "\n\n"
-             + "Per RIFIUTARE l'accesso:\n" + rejectUrl  + "\n\n"
-             + "--\n"
-             + "PostureMate - Sistema di monitoraggio medico\n"
-             + "Questo messaggio e' generato automaticamente.";
+    .status-message {
+      font-size: 14px;
+      color: #424242;
+      text-align: center;
+      line-height: 1.6;
     }
 
-    // ─── Corpo email approvazione (HTML) ─────────────────────────────────────
-
-    private static String buildApprovalHtml(String nome, String cognome, String email,
-                                             String data, String approveUrl, String rejectUrl) {
-        return "<!DOCTYPE html>"
-             + "<html lang='it'><head><meta charset='UTF-8'></head>"
-             + "<body style='margin:0;padding:0;background-color:#f4f4f4;font-family:Arial,Helvetica,sans-serif;'>"
-             + "<table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f4f4f4;padding:30px 0;'>"
-             + "<tr><td align='center'>"
-             + "<table width='560' cellpadding='0' cellspacing='0' style='background-color:#ffffff;border-radius:6px;overflow:hidden;border:1px solid #e0e0e0;'>"
-
-             // Header — colore primario app #7CB342
-             + "<tr><td style='background-color:#7CB342;padding:28px 32px;'>"
-             + "<p style='margin:0;font-size:20px;font-weight:bold;color:#ffffff;letter-spacing:0.5px;'>PostureMate</p>"
-             + "<p style='margin:6px 0 0;font-size:13px;color:#dcedc8;'>Sistema di Monitoraggio Medico</p>"
-             + "</td></tr>"
-
-             // Intro
-             + "<tr><td style='padding:32px 32px 0;'>"
-             + "<p style='margin:0;font-size:15px;color:#333333;'>E' stata ricevuta una nuova richiesta di accesso al sistema PostureMate.</p>"
-             + "</td></tr>"
-
-             // Info box — barra sinistra verde come dialog logout
-             + "<tr><td style='padding:24px 32px;'>"
-             + "<table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f1f8e9;border-left:4px solid #7CB342;border-radius:4px;'>"
-             + "<tr><td style='padding:16px 20px;'>"
-             + "<table cellpadding='0' cellspacing='0'>"
-             + "<tr><td style='font-size:13px;color:#666666;padding:5px 0;width:70px;'>Nome</td>"
-             + "    <td style='font-size:14px;color:#1a1a1a;font-weight:bold;padding:5px 0;'>" + nome + " " + cognome + "</td></tr>"
-             + "<tr><td style='font-size:13px;color:#666666;padding:5px 0;'>Email</td>"
-             + "    <td style='font-size:14px;color:#1a1a1a;padding:5px 0;'>" + email + "</td></tr>"
-             + "<tr><td style='font-size:13px;color:#666666;padding:5px 0;'>Data</td>"
-             + "    <td style='font-size:14px;color:#1a1a1a;padding:5px 0;'>" + data + "</td></tr>"
-             + "</table>"
-             + "</td></tr></table>"
-             + "</td></tr>"
-
-             // Istruzioni
-             + "<tr><td style='padding:0 32px 24px;'>"
-             + "<p style='margin:0;font-size:14px;color:#555555;line-height:1.6;'>"
-             + "Verificare le credenziali del medico prima di procedere. "
-             + "Una volta approvato, il dottore potra' accedere immediatamente all'applicazione."
-             + "</p>"
-             + "</td></tr>"
-
-             // Divisore
-             + "<tr><td style='padding:0 32px;'>"
-             + "<table width='100%' cellpadding='0' cellspacing='0'><tr><td style='border-top:1px solid #e0e0e0;'></td></tr></table>"
-             + "</td></tr>"
-
-             // Pulsanti — solid per approva, outlined per rifiuta (come dialog: confirm=solid, cancel=outlined)
-             + "<tr><td style='padding:20px 32px 36px;'>"
-             + "<table cellpadding='0' cellspacing='0'>"
-             + "<tr>"
-             + "<td style='padding-right:12px;'>"
-             + "<a href='" + rejectUrl + "' style='display:inline-block;padding:12px 26px;background-color:#ffffff;color:#7CB342;text-decoration:none;font-size:14px;font-weight:bold;border-radius:4px;border:2px solid #7CB342;'>Rifiuta</a>"
-             + "</td>"
-             + "<td>"
-             + "<a href='" + approveUrl + "' style='display:inline-block;padding:12px 26px;background-color:#7CB342;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;border-radius:4px;'>Approva accesso</a>"
-             + "</td>"
-             + "</tr></table>"
-             + "</td></tr>"
-
-             // Footer
-             + "<tr><td style='background-color:#f4f4f4;padding:18px 32px;border-top:1px solid #e0e0e0;'>"
-             + "<p style='margin:0;font-size:12px;color:#999999;'>PostureMate &middot; Sistema di monitoraggio medico</p>"
-             + "<p style='margin:4px 0 0;font-size:12px;color:#bbbbbb;'>Questo messaggio e' generato automaticamente. Non rispondere a questa email.</p>"
-             + "</td></tr>"
-
-             + "</table>"
-             + "</td></tr></table>"
-             + "</body></html>";
+    .divider {
+      border: none;
+      border-top: 1px solid #e0e0e0;
+      margin: 20px 0 16px;
     }
 
-    // ─── Corpo email credenziali paziente (plain) ─────────────────────────────
-
-    private static String buildPatientCredentialsText(String name, String email, String password) {
-        return "PostureMate - Credenziali di accesso\n"
-             + "======================================\n\n"
-             + "Gentile " + name + ",\n\n"
-             + "Il suo account PostureMate e' stato creato dal suo medico.\n\n"
-             + "Credenziali di accesso:\n"
-             + "  Email:    " + email + "\n"
-             + "  Password: " + password + "\n\n"
-             + "Per accedere all'applicazione:\n"
-             + "  1. Aprire PostureMate sul dispositivo\n"
-             + "  2. Inserire le credenziali indicate\n"
-             + "  3. Cambiare la password al primo accesso tramite 'Password dimenticata?'\n\n"
-             + "Per qualsiasi problema contattare il proprio medico.\n\n"
-             + "--\n"
-             + "PostureMate - Sistema di monitoraggio medico\n"
-             + "Questo messaggio e' generato automaticamente.";
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
     }
 
-    // ─── Corpo email credenziali paziente (HTML) ──────────────────────────────
-
-    private static String buildPatientCredentialsHtml(String name, String email, String password) {
-        return "<!DOCTYPE html>"
-             + "<html lang='it'><head><meta charset='UTF-8'></head>"
-             + "<body style='margin:0;padding:0;background-color:#f4f4f4;font-family:Arial,Helvetica,sans-serif;'>"
-             + "<table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f4f4f4;padding:30px 0;'>"
-             + "<tr><td align='center'>"
-             + "<table width='560' cellpadding='0' cellspacing='0' style='background-color:#ffffff;border-radius:6px;overflow:hidden;border:1px solid #e0e0e0;'>"
-
-             // Header — colore primario app #7CB342
-             + "<tr><td style='background-color:#7CB342;padding:28px 32px;'>"
-             + "<p style='margin:0;font-size:20px;font-weight:bold;color:#ffffff;'>PostureMate</p>"
-             + "<p style='margin:6px 0 0;font-size:13px;color:#dcedc8;'>Sistema di Monitoraggio Medico</p>"
-             + "</td></tr>"
-
-             // Intro
-             + "<tr><td style='padding:32px 32px 24px;'>"
-             + "<p style='margin:0;font-size:15px;color:#333333;'>Gentile <strong>" + name + "</strong>,</p>"
-             + "<p style='margin:14px 0 0;font-size:14px;color:#555555;line-height:1.6;'>Il suo account PostureMate e' stato creato dal suo medico. Di seguito le credenziali per accedere all'applicazione.</p>"
-             + "</td></tr>"
-
-             // Credenziali
-             + "<tr><td style='padding:0 32px 28px;'>"
-             + "<table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f1f8e9;border-left:4px solid #7CB342;border-radius:4px;'>"
-             + "<tr><td style='padding:20px 20px;'>"
-             + "<table cellpadding='0' cellspacing='0'>"
-             + "<tr><td style='font-size:13px;color:#666666;padding:5px 0;width:80px;'>Email</td>"
-             + "    <td style='font-size:14px;color:#1a1a1a;font-weight:bold;padding:5px 0;'>" + email + "</td></tr>"
-             + "<tr><td style='font-size:13px;color:#666666;padding:5px 0;'>Password</td>"
-             + "    <td style='font-size:14px;color:#1a1a1a;font-weight:bold;padding:5px 0;letter-spacing:1px;'>" + password + "</td></tr>"
-             + "</table>"
-             + "</td></tr></table>"
-             + "</td></tr>"
-
-             // Istruzioni
-             + "<tr><td style='padding:0 32px 36px;'>"
-             + "<p style='margin:0 0 10px;font-size:13px;color:#555555;'>Per accedere all'applicazione:</p>"
-             + "<ol style='margin:0;padding-left:18px;font-size:13px;color:#555555;line-height:2;'>"
-             + "<li>Aprire PostureMate sul dispositivo</li>"
-             + "<li>Inserire le credenziali indicate</li>"
-             + "<li>Cambiare la password al primo accesso tramite <em>Password dimenticata?</em></li>"
-             + "</ol>"
-             + "</td></tr>"
-
-             // Footer
-             + "<tr><td style='background-color:#f4f4f4;padding:18px 32px;border-top:1px solid #e0e0e0;'>"
-             + "<p style='margin:0;font-size:12px;color:#999999;'>PostureMate &middot; Sistema di monitoraggio medico</p>"
-             + "<p style='margin:4px 0 0;font-size:12px;color:#bbbbbb;'>Per qualsiasi problema contattare il proprio medico.</p>"
-             + "</td></tr>"
-
-             + "</table>"
-             + "</td></tr></table>"
-             + "</body></html>";
+    .btn-outline {
+      padding: 10px 22px;
+      background-color: #ffffff;
+      color: #7CB342;
+      border: 2px solid #7CB342;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
     }
-}
-```
+
+    .btn-solid {
+      padding: 10px 22px;
+      background-color: #7CB342;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .card-footer {
+      background-color: #f4f4f4;
+      border-top: 1px solid #e0e0e0;
+      padding: 14px 28px;
+    }
+    .card-footer p {
+      font-size: 11px;
+      color: #9e9e9e;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <div class="card-header">
+    <h1>PostureMate</h1>
+  </div>
+
+  <div class="card-body">
+
+    <div class="section-title">
+      <div class="accent-bar"></div>
+      <span id="card-title">Elaborazione in corso</span>
+    </div>
+
+    <div class="info-box" id="info-box" style="display:none;"></div>
+
+    <div id="spinner" class="spinner"></div>
+    <p class="status-message" id="status-message">Connessione al server in corso...</p>
+
+    <hr class="divider" id="divider" style="display:none;" />
+
+    <div class="actions" id="actions" style="display:none;">
+      <a href="mailto:j.khawla@outlook.com" class="btn-outline">Contatta supporto</a>
+    </div>
+
+  </div>
+
+  <div class="card-footer">
+    <p>PostureMate &middot; Sistema di monitoraggio medico</p>
+    <p>Azione eseguita dall'amministratore del sistema.</p>
+  </div>
+
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey:            "AIzaSyDr5JZBF3i2tDV0QflxOJFGXEYXgNJkGsQ",
+    authDomain:        "posturemate-6b424.firebaseapp.com",
+    databaseURL:       "https://posturemate-6b424-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:         "posturemate-6b424",
+    storageBucket:     "posturemate-6b424.appspot.com",
+    messagingSenderId: "946978309107",
+    appId:             "1:946978309107:android:ef37b5ccf0f12c1d1c95be"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  function setStatus(title, infoText, message) {
+    document.getElementById('card-title').textContent     = title;
+    document.getElementById('spinner').style.display      = 'none';
+    document.getElementById('status-message').textContent = message;
+    if (infoText) {
+      const box = document.getElementById('info-box');
+      box.textContent   = infoText;
+      box.style.display = 'block';
+    }
+    document.getElementById('divider').style.display = 'block';
+    document.getElementById('actions').style.display = 'flex';
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const action = params.get('action');
+  const uid    = params.get('uid');
+
+  if (!uid || !action) {
+    setStatus(
+      'Link non valido',
+      'Parametri mancanti nel link ricevuto via email.',
+      'Il link utilizzato non contiene le informazioni necessarie. Contattare il supporto.'
+    );
+  } else if (action === 'approve') {
+    db.ref('v2/users/doctors/' + uid + '/approved')
+      .set(true)
+      .then(() => {
+        setStatus(
+          'Accesso approvato',
+          "Il dottore ha ora accesso completo all'applicazione PostureMate.",
+          "L'approvazione e' stata registrata correttamente. Il medico potra' accedere immediatamente."
+        );
+      })
+      .catch(err => {
+        setStatus(
+          "Errore durante l'approvazione",
+          null,
+          'Impossibile completare l\'operazione: ' + err.message
+        );
+      });
+  } else if (action === 'reject') {
+    setStatus(
+      'Accesso rifiutato',
+      "Il dottore non potra' accedere all'applicazione finche' non viene approvato manualmente.",
+      "La richiesta e' stata rifiutata. Il profilo rimane nel sistema con accesso bloccato."
+    );
+  } else {
+    setStatus(
+      'Azione non riconosciuta',
+      null,
+      'Il parametro "action" nel link non e\' valido. Contattare il supporto.'
+    );
+  }
+</script>
+
+</body>
+</html>
